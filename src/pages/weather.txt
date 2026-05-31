@@ -1,0 +1,1564 @@
+// add croprecommendations according to weather 
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from "react-router-dom";
+
+import { 
+  FaThermometerHalf, 
+  FaTint, 
+  FaWind, 
+  FaCloudRain, 
+  FaMapMarkerAlt,
+  FaSun,
+  FaMoon,
+  FaCloud,
+  FaCloudSun,
+  FaCloudShowersHeavy,
+  FaSnowflake,
+  FaBolt,
+  FaSmog,
+  FaSearch,
+  FaLocationArrow,
+  FaCalendarAlt,
+  FaEye,
+  FaTemperatureHigh,
+  FaTemperatureLow,
+  FaArrowUp,
+  FaArrowDown,
+  FaSpinner,
+  FaSeedling,
+  FaLeaf,
+  FaTree
+} from 'react-icons/fa';
+
+const Weather = () => {
+  const navigate = useNavigate();
+
+  const API_KEY = "165ac561bb8fd08126ca6f2d23617262";
+  const API_BASE_URL = 'https://api.openweathermap.org/data/2.5';
+
+  const [city, setCity] = useState('');
+  const [weather, setWeather] = useState(null);
+  const [forecast, setForecast] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('current');
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [cropRecommendations, setCropRecommendations] = useState([]);
+
+  const weatherIcons = {
+    '01d': <FaSun className="weather-icon sun" />,
+    '01n': <FaMoon className="weather-icon moon" />,
+    '02d': <FaCloudSun className="weather-icon cloud-sun" />,
+    '02n': <FaCloudSun className="weather-icon cloud-moon" />,
+    '03d': <FaCloud className="weather-icon cloud" />,
+    '03n': <FaCloud className="weather-icon cloud" />,
+    '04d': <FaCloud className="weather-icon cloud" />,
+    '04n': <FaCloud className="weather-icon cloud" />,
+    '09d': <FaCloudShowersHeavy className="weather-icon rain" />,
+    '09n': <FaCloudShowersHeavy className="weather-icon rain" />,
+    '10d': <FaCloudRain className="weather-icon rain-sun" />,
+    '10n': <FaCloudRain className="weather-icon rain-moon" />,
+    '11d': <FaBolt className="weather-icon thunder" />,
+    '11n': <FaBolt className="weather-icon thunder" />,
+    '13d': <FaSnowflake className="weather-icon snow" />,
+    '13n': <FaSnowflake className="weather-icon snow" />,
+    '50d': <FaSmog className="weather-icon mist" />,
+    '50n': <FaSmog className="weather-icon mist" />
+  };
+
+  // Crop database with weather requirements
+  const cropDatabase = [
+    {
+      name: "Rice",
+      temperature: { min: 20, max: 35, optimal: 25 },
+      humidity: { min: 70, max: 90, optimal: 80 },
+      rainfall: { min: 1000, max: 2500, optimal: 1500 },
+      season: ["Kharif", "Summer"],
+      description: "Requires high temperature and plenty of water",
+      icon: <FaSeedling />,
+      suitability: 0
+    },
+    {
+      name: "Wheat",
+      temperature: { min: 10, max: 25, optimal: 20 },
+      humidity: { min: 50, max: 70, optimal: 60 },
+      rainfall: { min: 500, max: 1000, optimal: 750 },
+      season: ["Rabi"],
+      description: "Cool season crop, requires moderate rainfall",
+      icon: <FaLeaf />,
+      suitability: 0
+    },
+    {
+      name: "Maize",
+      temperature: { min: 15, max: 30, optimal: 25 },
+      humidity: { min: 60, max: 80, optimal: 70 },
+      rainfall: { min: 600, max: 1200, optimal: 900 },
+      season: ["Kharif"],
+      description: "Warm season crop, needs well-drained soil",
+      icon: <FaTree />,
+      suitability: 0
+    },
+    {
+      name: "Cotton",
+      temperature: { min: 20, max: 35, optimal: 30 },
+      humidity: { min: 50, max: 70, optimal: 60 },
+      rainfall: { min: 500, max: 800, optimal: 650 },
+      season: ["Kharif"],
+      description: "Requires hot climate and moderate rainfall",
+      icon: <FaLeaf />,
+      suitability: 0
+    },
+    {
+      name: "Sugarcane",
+      temperature: { min: 20, max: 35, optimal: 30 },
+      humidity: { min: 60, max: 85, optimal: 75 },
+      rainfall: { min: 1000, max: 1500, optimal: 1250 },
+      season: ["Year-round"],
+      description: "Tropical crop, requires long warm season",
+      icon: <FaTree />,
+      suitability: 0
+    },
+    {
+      name: "Potato",
+      temperature: { min: 10, max: 25, optimal: 18 },
+      humidity: { min: 60, max: 80, optimal: 70 },
+      rainfall: { min: 500, max: 700, optimal: 600 },
+      season: ["Rabi", "Kharif"],
+      description: "Cool climate crop, frost sensitive",
+      icon: <FaSeedling />,
+      suitability: 0
+    },
+    {
+      name: "Tomato",
+      temperature: { min: 15, max: 30, optimal: 25 },
+      humidity: { min: 50, max: 70, optimal: 60 },
+      rainfall: { min: 600, max: 900, optimal: 750 },
+      season: ["Year-round"],
+      description: "Versatile crop, needs warm temperatures",
+      icon: <FaLeaf />,
+      suitability: 0
+    },
+    {
+      name: "Soybean",
+      temperature: { min: 20, max: 30, optimal: 25 },
+      humidity: { min: 50, max: 80, optimal: 65 },
+      rainfall: { min: 500, max: 1000, optimal: 750 },
+      season: ["Kharif"],
+      description: "Warm season legume, requires moderate moisture",
+      icon: <FaSeedling />,
+      suitability: 0
+    },
+    {
+      name: "Barley",
+      temperature: { min: 12, max: 25, optimal: 18 },
+      humidity: { min: 40, max: 60, optimal: 50 },
+      rainfall: { min: 300, max: 600, optimal: 450 },
+      season: ["Rabi"],
+      description: "Cool season cereal, drought tolerant",
+      icon: <FaLeaf />,
+      suitability: 0
+    },
+    {
+      name: "Millets",
+      temperature: { min: 25, max: 35, optimal: 30 },
+      humidity: { min: 30, max: 50, optimal: 40 },
+      rainfall: { min: 300, max: 500, optimal: 400 },
+      season: ["Kharif"],
+      description: "Drought resistant, grows in poor soils",
+      icon: <FaTree />,
+      suitability: 0
+    }
+  ];
+
+  // Calculate crop suitability based on weather
+  const calculateCropSuitability = (weatherData) => {
+    if (!weatherData) return [];
+
+    const temperature = weatherData.temp;
+    const humidity = weatherData.humidity;
+    const rainfall = weatherData.pressure; // Using pressure as proxy for rainfall tendency
+
+    const recommendations = cropDatabase.map(crop => {
+      let suitability = 0;
+
+      // Temperature suitability (40% weight)
+      if (temperature >= crop.temperature.min && temperature <= crop.temperature.max) {
+        const tempDiff = Math.abs(temperature - crop.temperature.optimal);
+        const tempRange = crop.temperature.max - crop.temperature.min;
+        const tempScore = Math.max(0, 40 - (tempDiff / tempRange) * 40);
+        suitability += tempScore;
+      }
+
+      // Humidity suitability (30% weight)
+      if (humidity >= crop.humidity.min && humidity <= crop.humidity.max) {
+        const humidityDiff = Math.abs(humidity - crop.humidity.optimal);
+        const humidityRange = crop.humidity.max - crop.humidity.min;
+        const humidityScore = Math.max(0, 30 - (humidityDiff / humidityRange) * 30);
+        suitability += humidityScore;
+      }
+
+      // Rainfall suitability (30% weight) - using pressure as indicator
+      const rainfallIndicator = 1000 - rainfall; // Convert pressure to rainfall indicator
+      const rainfallScore = Math.max(0, 30 - Math.abs(rainfallIndicator - crop.rainfall.optimal) / 100);
+      suitability += Math.min(30, rainfallScore);
+
+      return {
+        ...crop,
+        suitability: Math.round(suitability),
+        temperatureMatch: `${Math.round(temperature)}°C vs optimal ${crop.temperature.optimal}°C`,
+        humidityMatch: `${humidity}% vs optimal ${crop.humidity.optimal}%`
+      };
+    });
+
+    // Sort by suitability and return top 5
+    return recommendations
+      .sort((a, b) => b.suitability - a.suitability)
+      .slice(0, 5);
+  };
+
+  // Get current season based on month
+  const getCurrentSeason = () => {
+    const month = new Date().getMonth() + 1;
+    if (month >= 6 && month <= 10) return "Kharif";
+    if (month >= 11 || month <= 3) return "Rabi";
+    return "Summer";
+  };
+
+  // Simple weather fetch function
+  const getWeather = async () => {
+    if (!city.trim()) {
+      setError('Please enter a city name');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`
+      );
+      const data = await response.json();
+
+      if (data.cod === "404") {
+        setError("City not found");
+        setWeather(null);
+      } else {
+        const processedWeather = {
+          name: data.name,
+          temp: Math.round(data.main.temp),
+          description: data.weather[0].description,
+          humidity: data.main.humidity,
+          windSpeed: data.wind.speed,
+          pressure: data.main.pressure,
+          feels_like: Math.round(data.main.feels_like),
+          temp_min: Math.round(data.main.temp_min),
+          temp_max: Math.round(data.main.temp_max),
+          icon: data.weather[0].icon,
+          country: data.sys.country,
+          sunrise: data.sys.sunrise,
+          sunset: data.sys.sunset
+        };
+        
+        setWeather(processedWeather);
+        
+        // Calculate crop recommendations
+        const recommendations = calculateCropSuitability(processedWeather);
+        setCropRecommendations(recommendations);
+
+        // Save to recent searches
+        const search = {
+          city: city,
+          temp: processedWeather.temp,
+          icon: processedWeather.icon,
+          timestamp: new Date().toLocaleTimeString(),
+          location: data.name
+        };
+
+        setRecentSearches(prev => {
+          const filtered = prev.filter(s => s.city.toLowerCase() !== city.toLowerCase());
+          const updated = [search, ...filtered.slice(0, 4)];
+          localStorage.setItem('recentWeatherSearches', JSON.stringify(updated));
+          return updated;
+        });
+
+        // Also get forecast
+        getForecast();
+      }
+    } catch (err) {
+      setError('Failed to fetch weather data. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get forecast data
+  const getForecast = async () => {
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric`
+      );
+      const data = await response.json();
+
+      if (data.cod === "200") {
+        // Process forecast data for 5 days
+        const dailyForecast = {};
+        data.list.forEach(item => {
+          const date = item.dt_txt.split(' ')[0];
+          if (!dailyForecast[date]) {
+            dailyForecast[date] = {
+              temps: [],
+              humidity: [],
+              weather: [],
+              windSpeed: [],
+              date: date
+            };
+          }
+          dailyForecast[date].temps.push(item.main.temp);
+          dailyForecast[date].humidity.push(item.main.humidity);
+          dailyForecast[date].weather.push(item.weather[0]);
+          dailyForecast[date].windSpeed.push(item.wind.speed);
+        });
+
+        const forecastArray = Object.keys(dailyForecast).slice(0, 5).map(date => {
+          const day = dailyForecast[date];
+          const avgTemp = day.temps.reduce((a, b) => a + b, 0) / day.temps.length;
+          const avgHumidity = day.humidity.reduce((a, b) => a + b, 0) / day.humidity.length;
+          const mainWeather = day.weather[0];
+
+          return {
+            date: date,
+            temp: {
+              avg: Math.round(avgTemp),
+              min: Math.min(...day.temps),
+              max: Math.max(...day.temps)
+            },
+            weather: {
+              description: mainWeather.description,
+              icon: mainWeather.icon,
+              main: mainWeather.main
+            },
+            humidity: Math.round(avgHumidity)
+          };
+        });
+
+        setForecast({
+          success: true,
+          city: {
+            name: data.city.name,
+            country: data.city.country
+          },
+          forecast: forecastArray
+        });
+      }
+    } catch (err) {
+      console.error("Forecast fetch error:", err);
+    }
+  };
+
+  // Get location weather
+  const getLocationWeather = () => {
+    if (navigator.geolocation) {
+      setLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            
+            // Get city name from coordinates
+            const response = await fetch(
+              `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
+            );
+            const data = await response.json();
+            
+            if (data.cod === 200) {
+              const cityName = data.name;
+              setCity(cityName);
+              
+              const processedWeather = {
+                name: data.name,
+                temp: Math.round(data.main.temp),
+                description: data.weather[0].description,
+                humidity: data.main.humidity,
+                windSpeed: data.wind.speed,
+                pressure: data.main.pressure,
+                feels_like: Math.round(data.main.feels_like),
+                temp_min: Math.round(data.main.temp_min),
+                temp_max: Math.round(data.main.temp_max),
+                icon: data.weather[0].icon,
+                country: data.sys.country,
+                sunrise: data.sys.sunrise,
+                sunset: data.sys.sunset
+              };
+              
+              setWeather(processedWeather);
+              setError('');
+              
+              // Calculate crop recommendations
+              const recommendations = calculateCropSuitability(processedWeather);
+              setCropRecommendations(recommendations);
+            }
+          } catch (err) {
+            setError('Failed to fetch location weather');
+          } finally {
+            setLoading(false);
+          }
+        },
+        (error) => {
+          setError('Please enable location access or enter city manually');
+          setLoading(false);
+        }
+      );
+    } else {
+      setError('Geolocation is not supported by your browser');
+    }
+  };
+
+  useEffect(() => {
+    // Load recent searches
+    const saved = localStorage.getItem('recentWeatherSearches');
+    if (saved) {
+      setRecentSearches(JSON.parse(saved));
+    }
+    
+    // Load default city
+    setCity('Mumbai');
+    
+    // Get initial weather for default city
+    setTimeout(() => {
+      if (city) {
+        getWeather();
+      }
+    }, 1000);
+  }, []);
+
+  const formatTime = (timestamp) => {
+    return new Date(timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  const getSuitabilityColor = (score) => {
+    if (score >= 80) return '#10B981'; // Green
+    if (score >= 60) return '#F59E0B'; // Yellow
+    if (score >= 40) return '#EF4444'; // Red
+    return '#6B7280'; // Gray
+  };
+
+  const getSuitabilityText = (score) => {
+    if (score >= 80) return 'Highly Suitable';
+    if (score >= 60) return 'Moderately Suitable';
+    if (score >= 40) return 'Marginally Suitable';
+    return 'Not Suitable';
+  };
+
+  return (
+    <div className="weather-page">
+      <div className="page">
+        <h1 className="page-title">🌦 Weather App with Crop Recommendations</h1>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="weather-container"
+        >
+          {/* Search Section */}
+          <div className="weather-search-section">
+            <div className="weather-search-form">
+              <div className="search-input-group">
+                <FaSearch className="search-icon" />
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Enter city name..."
+                  className="search-input"
+                  onKeyPress={(e) => e.key === 'Enter' && getWeather()}
+                />
+              </div>
+              <div className="search-buttons">
+                <button 
+                  onClick={getWeather}
+                  disabled={loading}
+                  className="btn btn-search"
+                >
+                  {loading ? (
+                    <>
+                      <FaSpinner className="spinner" /> Loading...
+                    </>
+                  ) : (
+                    <>
+                      <FaSearch /> Search
+                    </>
+                  )}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-location"
+                  onClick={getLocationWeather}
+                  disabled={loading}
+                >
+                  <FaLocationArrow /> Use My Location
+                </button>
+              </div>
+            </div>
+
+            {recentSearches.length > 0 && (
+              <div className="recent-searches">
+                <h4>Recent Searches:</h4>
+                <div className="recent-cards">
+                  {recentSearches.map((search, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.05 }}
+                      className="recent-card"
+                      onClick={() => {
+                        setCity(search.city);
+                        getWeather();
+                      }}
+                    >
+                      <div className="recent-city">{search.city}</div>
+                      <div className="recent-temp">{search.temp}°C</div>
+                      <div className="recent-icon">
+                        {weatherIcons[search.icon] || <FaCloud />}
+                      </div>
+                      <div className="recent-time">{search.timestamp}</div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="error-message"
+            >
+              {error}
+            </motion.div>
+          )}
+
+          {/* Weather Display */}
+          <AnimatePresence>
+            {weather && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="weather-display"
+              >
+                {/* Tabs */}
+                <div className="weather-tabs">
+                  <button
+                    className={`tab-btn ${activeTab === 'current' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('current')}
+                  >
+                    Current Weather
+                  </button>
+                  <button
+                    className={`tab-btn ${activeTab === 'forecast' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('forecast')}
+                  >
+                    5-Day Forecast
+                  </button>
+                  <button
+                    className={`tab-btn ${activeTab === 'crops' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('crops')}
+                  >
+                    <FaSeedling /> Crop Recommendations
+                  </button>
+                </div>
+
+                {/* Current Weather Tab */}
+                {activeTab === 'current' && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="current-weather"
+                  >
+                    {/* Simple Weather Card */}
+                    <div className="simple-weather-card">
+                      <div className="card-header">
+                        <h2 className="location">
+                          <FaMapMarkerAlt /> {weather.name}, {weather.country}
+                        </h2>
+                        <p className="weather-description">
+                          {weather.description.charAt(0).toUpperCase() + weather.description.slice(1)}
+                        </p>
+                        <p className="update-time">
+                          Updated: {new Date().toLocaleTimeString()}
+                        </p>
+                      </div>
+                      
+                      <div className="temperature-display">
+                        <div className="temp-main">
+                          {weather.temp}°C
+                        </div>
+                        <div className="temp-feels">
+                          Feels like {weather.feels_like}°C
+                        </div>
+                      </div>
+                      
+                      <div className="weather-icon-large">
+                        {weatherIcons[weather.icon] || <FaCloud />}
+                      </div>
+
+                      <div className="weather-details">
+                        <div className="details-grid">
+                          <div className="detail-item">
+                            <FaTint className="detail-icon" />
+                            <div className="detail-content">
+                              <div className="detail-label">Humidity</div>
+                              <div className="detail-value">{weather.humidity}%</div>
+                            </div>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <FaWind className="detail-icon" />
+                            <div className="detail-content">
+                              <div className="detail-label">Wind Speed</div>
+                              <div className="detail-value">{weather.windSpeed} m/s</div>
+                            </div>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <FaArrowUp className="detail-icon" />
+                            <div className="detail-content">
+                              <div className="detail-label">Pressure</div>
+                              <div className="detail-value">{weather.pressure} hPa</div>
+                            </div>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <FaTemperatureHigh className="detail-icon" />
+                            <div className="detail-content">
+                              <div className="detail-label">High</div>
+                              <div className="detail-value">{weather.temp_max}°C</div>
+                            </div>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <FaTemperatureLow className="detail-icon" />
+                            <div className="detail-content">
+                              <div className="detail-label">Low</div>
+                              <div className="detail-value">{weather.temp_min}°C</div>
+                            </div>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <FaSun className="detail-icon" />
+                            <div className="detail-content">
+                              <div className="detail-label">Sunrise</div>
+                              <div className="detail-value">{formatTime(weather.sunrise)}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="detail-item">
+                            <FaMoon className="detail-icon" />
+                            <div className="detail-content">
+                              <div className="detail-label">Sunset</div>
+                              <div className="detail-value">{formatTime(weather.sunset)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Forecast Tab */}
+                {activeTab === 'forecast' && forecast && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="forecast-container"
+                  >
+                    <h3 className="forecast-title">
+                      <FaCalendarAlt /> 5-Day Forecast for {forecast.city.name}
+                    </h3>
+                    
+                    <div className="forecast-grid">
+                      {forecast.forecast.map((day, index) => (
+                        <motion.div
+                          key={index}
+                          whileHover={{ scale: 1.05 }}
+                          className="forecast-card"
+                        >
+                          <div className="forecast-date">{formatDate(day.date)}</div>
+                          <div className="forecast-icon">
+                            {weatherIcons[day.weather.icon] || <FaCloud />}
+                          </div>
+                          <div className="forecast-temp">
+                            <div className="temp-high">
+                              <FaTemperatureHigh /> {Math.round(day.temp.max)}°C
+                            </div>
+                            <div className="temp-low">
+                              <FaTemperatureLow /> {Math.round(day.temp.min)}°C
+                            </div>
+                          </div>
+                          <div className="forecast-desc">
+                            {day.weather.description}
+                          </div>
+                          <div className="forecast-details">
+                            <span className="detail-item">
+                              <FaTint /> {day.humidity}%
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Crop Recommendations Tab */}
+                {activeTab === 'crops' && weather && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="crop-recommendations"
+                  >
+                    <h3 className="crop-title">
+                      <FaSeedling /> Crop Recommendations for {weather.name}
+                    </h3>
+                    
+                    <div className="weather-summary-card">
+                      <div className="summary-item">
+                        <span className="summary-label">Current Temperature:</span>
+                        <span className="summary-value">{weather.temp}°C</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Humidity:</span>
+                        <span className="summary-value">{weather.humidity}%</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Current Season:</span>
+                        <span className="summary-value">{getCurrentSeason()}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Weather Condition:</span>
+                        <span className="summary-value">{weather.description}</span>
+                      </div>
+                    </div>
+
+                    <div className="crop-grid">
+                      {cropRecommendations.map((crop, index) => (
+                        <motion.div
+                          key={index}
+                          whileHover={{ scale: 1.02 }}
+                          className="crop-card"
+                          style={{
+                            borderLeft: `5px solid ${getSuitabilityColor(crop.suitability)}`
+                          }}
+                        >
+                          <div className="crop-header">
+                            <div className="crop-icon">
+                              {crop.icon}
+                            </div>
+                            <div className="crop-name">
+                              <h4>{crop.name}</h4>
+                              <span className="crop-season">{crop.season.join(', ')} Season</span>
+                            </div>
+                            <div className="suitability-score" style={{ color: getSuitabilityColor(crop.suitability) }}>
+                              <div className="score-number">{crop.suitability}%</div>
+                              <div className="score-text">{getSuitabilityText(crop.suitability)}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="crop-description">
+                            {crop.description}
+                          </div>
+                          
+                          <div className="crop-requirements">
+                            <div className="requirement">
+                              <FaThermometerHalf className="requirement-icon" />
+                              <span>{crop.temperatureMatch}</span>
+                            </div>
+                            <div className="requirement">
+                              <FaTint className="requirement-icon" />
+                              <span>{crop.humidityMatch}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="crop-details">
+                            <div className="detail">
+                              <span className="detail-label">Optimal Temp:</span>
+                              <span className="detail-value">{crop.temperature.optimal}°C</span>
+                            </div>
+                            <div className="detail">
+                              <span className="detail-label">Optimal Humidity:</span>
+                              <span className="detail-value">{crop.humidity.optimal}%</span>
+                            </div>
+                            <div className="detail">
+                              <span className="detail-label">Rainfall:</span>
+                              <span className="detail-value">{crop.rainfall.optimal}mm</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    <div className="crop-tips">
+                      <h4>🌱 Farming Tips for Current Weather</h4>
+                      <ul>
+                        {weather.temp > 30 && (
+                          <li>High temperature detected: Consider heat-tolerant crops like millets or cotton</li>
+                        )}
+                        {weather.humidity > 70 && (
+                          <li>High humidity: Watch for fungal diseases, ensure proper ventilation</li>
+                        )}
+                        {weather.humidity < 40 && (
+                          <li>Low humidity: Increase irrigation frequency, use mulch to retain soil moisture</li>
+                        )}
+                        {weather.windSpeed > 5 && (
+                          <li>Windy conditions: Provide windbreaks, support for tall crops</li>
+                        )}
+                        <li>Current season ({getCurrentSeason()}): Focus on seasonal crops for better yield</li>
+                        <li>Check local soil conditions and water availability before planting</li>
+                      </ul>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+        
+        <button
+          onClick={() => navigate("/")}
+          className="back-button"
+        >
+          ← Back to Home
+        </button>
+      </div>
+
+      <style jsx>{`
+         .weather-page {
+          min-height: 100vh;
+          padding: 1rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .page {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 1rem;
+        }
+
+        .page-title {
+          text-align: center;
+          color: white;
+          font-size: 2.5rem;
+          margin-bottom: 2rem;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .weather-container {
+          background: white;
+          border-radius: 20px;
+          padding: 2rem;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          margin-bottom: 2rem;
+        }
+
+        .weather-search-section {
+          margin-bottom: 2rem;
+        }
+
+        .weather-search-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          margin-bottom: 2rem;
+        }
+
+        .search-input-group {
+          position: relative;
+          flex: 1;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #666;
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 1rem 1rem 1rem 3rem;
+          border: 2px solid #e0e6ed;
+          border-radius: 10px;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-buttons {
+          display: flex;
+          gap: 1rem;
+        }
+
+        .btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .btn-search {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          flex: 1;
+        }
+
+        .btn-location {
+          background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+          color: white;
+          flex: 1;
+        }
+
+        .btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .spinner {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .recent-searches {
+          margin-top: 1rem;
+          padding-top: 1rem;
+          border-top: 1px solid #e0e6ed;
+        }
+
+        .recent-searches h4 {
+          margin-bottom: 1rem;
+          color: #333;
+          font-size: 1rem;
+        }
+
+        .recent-cards {
+          display: flex;
+          gap: 1rem;
+          overflow-x: auto;
+          padding: 0.5rem;
+        }
+
+        .recent-card {
+          background: #f8f9fa;
+          border-radius: 10px;
+          padding: 1rem;
+          min-width: 120px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .recent-card:hover {
+          transform: translateY(-5px);
+          background: white;
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .recent-city {
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 0.5rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .recent-temp {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #f093fb;
+          margin-bottom: 0.5rem;
+        }
+
+        .recent-icon {
+          font-size: 2rem;
+          color: #FFD700;
+          margin-bottom: 0.5rem;
+        }
+
+        .recent-time {
+          font-size: 0.8rem;
+          color: #666;
+        }
+
+        .error-message {
+          background: #ffebee;
+          color: #c62828;
+          padding: 1rem;
+          border-radius: 10px;
+          margin-bottom: 1rem;
+          text-align: center;
+          border-left: 4px solid #c62828;
+        }
+
+        .weather-display {
+          margin-top: 1rem;
+        }
+
+        .weather-tabs {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 2rem;
+          flex-wrap: wrap;
+          border-bottom: 2px solid #e0e6ed;
+          padding-bottom: 1rem;
+        }
+
+        .tab-btn {
+          padding: 0.75rem 1.5rem;
+          border: none;
+          background: none;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          color: #666;
+        }
+
+        .tab-btn:hover {
+          background: rgba(102, 126, 234, 0.1);
+          color: #667eea;
+        }
+
+        .tab-btn.active {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+
+        /* Simple Weather Card */
+        .simple-weather-card {
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+          border-radius: 15px;
+          padding: 2rem;
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+          margin-bottom: 2rem;
+          text-align: center;
+        }
+
+        .card-header h2 {
+          font-size: 2rem;
+          color: #333;
+          margin-bottom: 0.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .weather-description {
+          color: #666;
+          margin-bottom: 0.5rem;
+          text-transform: capitalize;
+          font-size: 1.2rem;
+        }
+
+        .update-time {
+          color: #888;
+          font-size: 0.9rem;
+        }
+
+        .temperature-display {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .temp-main {
+          font-size: 4rem;
+          font-weight: 800;
+          color: #f093fb;
+          line-height: 1;
+          margin-bottom: 0.5rem;
+        }
+
+        .temp-feels {
+          color: #666;
+          font-size: 1.1rem;
+        }
+
+        .weather-icon-large {
+          font-size: 5rem;
+          color: #FFD700;
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .weather-details {
+          margin-top: 2rem;
+        }
+
+        .details-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1rem;
+        }
+
+        .detail-item {
+          background: white;
+          border-radius: 10px;
+          padding: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          transition: all 0.3s ease;
+        }
+
+        .detail-item:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .detail-icon {
+          font-size: 1.5rem;
+          color: #667eea;
+        }
+
+        .detail-content {
+          flex: 1;
+        }
+
+        .detail-label {
+          font-size: 0.8rem;
+          color: #666;
+          margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: #333;
+        }
+
+        /* Forecast Styles */
+        .forecast-container {
+          margin-top: 1rem;
+        }
+
+        .forecast-title {
+          color: #333;
+          margin-bottom: 2rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 1.5rem;
+        }
+
+        .forecast-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 1.5rem;
+        }
+
+        .forecast-card {
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+          border-radius: 15px;
+          padding: 1.5rem;
+          text-align: center;
+          transition: all 0.3s ease;
+        }
+
+        .forecast-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .forecast-date {
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 1rem;
+          font-size: 1.1rem;
+        }
+
+        .forecast-icon {
+          font-size: 2.5rem;
+          color: #FFD700;
+          margin: 1rem 0;
+        }
+
+        .forecast-temp {
+          margin: 1rem 0;
+        }
+
+        .temp-high, .temp-low {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          margin: 0.5rem 0;
+          font-size: 1rem;
+        }
+
+        .temp-high {
+          color: #f093fb;
+        }
+
+        .temp-low {
+          color: #667eea;
+        }
+
+        .forecast-desc {
+          color: #666;
+          font-size: 0.9rem;
+          margin: 1rem 0;
+          text-transform: capitalize;
+        }
+
+        .forecast-details {
+          display: flex;
+          justify-content: center;
+          font-size: 0.9rem;
+          color: #666;
+        }
+
+        .back-button {
+          width: 100%;
+          padding: 12px 24px;
+          border-radius: 10px;
+          border: none;
+          background: linear-gradient(135deg, #10B981, #34D399);
+          color: white;
+          font-weight: 600;
+          cursor: pointer;
+          margin-bottom: 1rem;
+          transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+          .page-title {
+            font-size: 2rem;
+          }
+          
+          .weather-container {
+            padding: 1rem;
+          }
+          
+          .search-buttons {
+            flex-direction: column;
+          }
+          
+          .weather-tabs {
+            flex-direction: column;
+          }
+          
+          .details-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .forecast-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .temp-main {
+            font-size: 3rem;
+          }
+          
+          .weather-icon-large {
+            font-size: 4rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .details-grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .forecast-grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .recent-cards {
+            flex-direction: column;
+          }
+          
+          .recent-card {
+            min-width: auto;
+          }
+        }
+
+        .weather-page {
+          min-height: 100vh;
+          padding: 1rem;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .page {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 1rem;
+        }
+
+        .page-title {
+          text-align: center;
+          color: white;
+          font-size: 2.5rem;
+          margin-bottom: 2rem;
+          text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .weather-container {
+          background: white;
+          border-radius: 20px;
+          padding: 2rem;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          margin-bottom: 2rem;
+        }
+
+        /* ... (keep all existing styles from your original code) ... */
+
+        /* Crop Recommendations Styles */
+        .crop-recommendations {
+          margin-top: 1rem;
+        }
+
+        .crop-title {
+          color: #333;
+          margin-bottom: 2rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 1.5rem;
+        }
+
+        .weather-summary-card {
+          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+          border-radius: 15px;
+          padding: 1.5rem;
+          margin-bottom: 2rem;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1rem;
+        }
+
+        .summary-item {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .summary-label {
+          font-size: 0.9rem;
+          color: #666;
+          margin-bottom: 0.25rem;
+        }
+
+        .summary-value {
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: #333;
+        }
+
+        .crop-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 1.5rem;
+          margin-bottom: 2rem;
+        }
+
+        .crop-card {
+          background: white;
+          border-radius: 15px;
+          padding: 1.5rem;
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        .crop-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .crop-header {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .crop-icon {
+          font-size: 2rem;
+          color: #10B981;
+        }
+
+        .crop-name h4 {
+          margin: 0;
+          font-size: 1.3rem;
+          color: #333;
+        }
+
+        .crop-season {
+          font-size: 0.8rem;
+          color: #666;
+          background: #f3f4f6;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+        }
+
+        .suitability-score {
+          margin-left: auto;
+          text-align: center;
+        }
+
+        .score-number {
+          font-size: 1.5rem;
+          font-weight: 700;
+        }
+
+        .score-text {
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+
+        .crop-description {
+          color: #666;
+          margin-bottom: 1rem;
+          line-height: 1.5;
+        }
+
+        .crop-requirements {
+          background: #f8f9fa;
+          border-radius: 10px;
+          padding: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .requirement {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin: 0.5rem 0;
+          color: #555;
+        }
+
+        .requirement-icon {
+          color: #667eea;
+        }
+
+        .crop-details {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.5rem;
+          font-size: 0.9rem;
+        }
+
+        .detail {
+          text-align: center;
+          padding: 0.5rem;
+          background: #f8f9fa;
+          border-radius: 6px;
+        }
+
+        .detail-label {
+          display: block;
+          color: #666;
+          font-size: 0.75rem;
+          margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+          display: block;
+          font-weight: 600;
+          color: #333;
+        }
+
+        .crop-tips {
+          background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+          border-radius: 15px;
+          padding: 1.5rem;
+          border-left: 5px solid #F59E0B;
+        }
+
+        .crop-tips h4 {
+          color: #92400E;
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .crop-tips ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .crop-tips li {
+          color: #78350F;
+          padding: 0.5rem 0;
+          padding-left: 1.5rem;
+          position: relative;
+        }
+
+        .crop-tips li:before {
+          content: "•";
+          color: #F59E0B;
+          position: absolute;
+          left: 0;
+          font-size: 1.2rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+          .crop-grid {
+            grid-template-columns: 1fr;
+          }
+          
+          .crop-details {
+            grid-template-columns: 1fr;
+          }
+          
+          .weather-summary-card {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default Weather;

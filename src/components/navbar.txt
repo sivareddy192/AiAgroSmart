@@ -1,0 +1,181 @@
+import React from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { getUserFromToken } from "../utils/auth";
+
+import {
+  FaSeedling,
+  FaCloudSun,
+  FaDatabase,
+  FaHistory,
+  FaSignInAlt,
+  FaUserPlus,
+  FaSignOutAlt
+} from "react-icons/fa";
+
+const Navbar = () => {
+  const navigate = useNavigate();
+  const user = getUserFromToken();
+
+  const token = localStorage.getItem("token");
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    alert("Logged out successfully");
+    navigate("/login");
+  };
+
+  return (
+    <header className="navbar">
+      <div className="nav-container">
+        {/* LOGO */}
+        <div className="logo">
+          <FaSeedling className="logo-icon" />
+          <span>AgroSmart</span>
+        </div>
+
+        {/* NAV LINKS */}
+        <nav className="nav-links">
+          <NavLink to="/" className="nav-btn">
+            Home
+          </NavLink>
+
+          <NavLink to="/weather" className="nav-btn">
+            <FaCloudSun />
+            <span>Weather</span>
+          </NavLink>
+
+          <NavLink to="/database" className="nav-btn">
+            <FaDatabase />
+            <span>Database</span>
+          </NavLink>
+
+          <NavLink to="/history" className="nav-btn">
+            <FaHistory />
+            <span>History</span>
+          </NavLink>
+
+          {/* CTA */}
+          <NavLink to="/crop-recommendation" className="nav-btn cta-btn">
+            <FaSeedling />
+            <span>Get Crop Advice</span>
+          </NavLink>
+
+          {/* AUTH BUTTONS */}
+          {!token ? (
+            <>
+              <NavLink to="/login" className="nav-btn">
+                <FaSignInAlt />
+                <span>Login</span>
+              </NavLink>
+
+              <NavLink to="/register" className="nav-btn">
+                <FaUserPlus />
+                <span>Register</span>
+              </NavLink>
+            </>
+          ) : (
+            <button onClick={handleLogout} className="nav-btn logout-btn">
+              <FaSignOutAlt />
+              <span>Logout</span>
+            </button>
+          )}
+        </nav>
+      </div>
+
+{user && (
+  <span style={{ fontSize: "0.85rem", color: "#2d5a5f"}}>
+    {user.email}
+  </span>
+)}
+
+      {/* STYLES (your styles + small add-on) */}
+      <style jsx>{`
+        .navbar {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(12px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-container {
+          max-width: 1300px;
+          margin: auto;
+          padding: 1rem 2rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .logo {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 1.6rem;
+          font-weight: 700;
+          color: #2d5a5f;
+        }
+
+        .logo-icon {
+          font-size: 1.9rem;
+        }
+
+        .nav-links {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+        }
+
+        .nav-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.55rem 1.1rem;
+          border-radius: 24px;
+          border: none;
+          background: none;
+          cursor: pointer;
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 0.95rem;
+          color: #2d5a5f;
+          transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+          background: rgba(45, 90, 95, 0.12);
+          transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+          background: rgba(45, 90, 95, 0.18);
+        }
+
+        .cta-btn {
+          background: linear-gradient(90deg, #2ecc71, #27ae60);
+          color: white;
+          box-shadow: 0 6px 18px rgba(39, 174, 96, 0.35);
+        }
+
+        .logout-btn {
+          background: #ef4444;
+          color: white;
+        }
+
+        .logout-btn:hover {
+          background: #dc2626;
+        }
+
+        @media (max-width: 768px) {
+          .nav-btn span {
+            display: none;
+          }
+        }
+      `}</style>
+    </header>
+  );
+};
+
+export default Navbar;
+

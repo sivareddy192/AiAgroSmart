@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
 import Navbar from '../components/Navbar';
 
@@ -18,20 +18,10 @@ import {
   FaBolt,
   FaSmog,
   FaSearch,
-  FaLocationArrow,
-  FaCalendarAlt,
-  FaEye,
-  FaTemperatureHigh,
-  FaTemperatureLow,
-  FaArrowUp,
-  FaArrowDown,
   FaSpinner,
   FaSeedling,
   FaLeaf,
   FaTree,
-  FaCheck,
-  FaInfoCircle,
-  FaArrowRight,
   FaArrowLeft
 } from 'react-icons/fa';
 
@@ -46,12 +36,12 @@ const WeatherWithCrops = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('weather');
-  const [recentSearches, setRecentSearches] = useState([]);
   const [cropRecommendations, setCropRecommendations] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [cropLoading, setCropLoading] = useState(false);
-  const [soilType, setSoilType] = useState('Loamy');
+  // eslint-disable-next-line no-unused-vars
+  const [recentSearches, setRecentSearches] = useState([]);
 
-  const soilTypes = ['Alluvial', 'Black', 'Red', 'Laterite', 'Sandy', 'Clayey', 'Loamy'];
 
   const weatherIcons = {
     '01d': <FaSun className="weather-icon sun text-yellow-500 animate-spin-slow" />,
@@ -279,6 +269,7 @@ const WeatherWithCrops = () => {
     }
     setCity('Mumbai');
     getWeather('Mumbai');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const formatDate = (dateString) => {

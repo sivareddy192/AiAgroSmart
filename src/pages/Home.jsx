@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { getUserFromToken } from "../utils/auth";
+
 import farm1 from "../assets/farm1.jpg";
 import farm2 from "../assets/farm2.jpeg";
 
@@ -18,9 +18,7 @@ import {
   FaTimes,
   FaWater,
   FaBug,
-  FaClock,
   FaYoutube,
-  FaLeaf,
   FaThermometerHalf,
   FaMicrochip
 } from "react-icons/fa";
@@ -29,7 +27,6 @@ const heroBackgrounds = [farm1, farm2];
 
 const Home = () => {
   const [currentCropIndex, setCurrentCropIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [showFarmingTips, setShowFarmingTips] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [bgIndex, setBgIndex] = useState(0);
@@ -45,13 +42,10 @@ const Home = () => {
   // Crop slider timer
   useEffect(() => {
     const interval = setInterval(() => {
-      setIsAnimating(true);
-      setTimeout(() => {
-        setCurrentCropIndex((prev) => (prev + 1) % crops.length);
-        setIsAnimating(false);
-      }, 500);
+      setCurrentCropIndex((prev) => (prev + 1) % crops.length);
     }, 8000);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const farmingTips = [

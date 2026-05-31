@@ -3,7 +3,7 @@ import axios from 'axios';
 import API_URL from '../utils/api.js';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
-import { FaSearch, FaFilter, FaInfoCircle, FaSeedling, FaCalendarAlt, FaThermometerHalf, FaCloudRain, FaTint, FaSpinner } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaInfoCircle, FaThermometerHalf, FaCloudRain, FaTint, FaSpinner } from 'react-icons/fa';
 
 const CropDatabase = () => {
   const [crops, setCrops] = useState([]);

@@ -19,12 +19,6 @@ import {
   FaSmog,
   FaSearch,
   FaLocationArrow,
-  FaCalendarAlt,
-  FaEye,
-  FaTemperatureHigh,
-  FaTemperatureLow,
-  FaArrowUp,
-  FaArrowDown,
   FaSpinner,
   FaArrowLeft,
   FaInfoCircle
@@ -257,6 +251,7 @@ const WeatherOnly = () => {
     }
     setCity('Mumbai');
     getWeather('Mumbai');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const formatTime = (timestamp) => {

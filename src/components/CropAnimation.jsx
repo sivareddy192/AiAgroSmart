@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FaSeedling, FaLeaf, FaTree, FaSun, FaTint, FaAppleAlt, FaCarrot, FaPepperHot } from 'react-icons/fa';
+import { FaSeedling, FaTree, FaSun, FaTint, FaAppleAlt, FaCarrot, FaPepperHot } from 'react-icons/fa';
 
 const CropAnimation = ({ type }) => {
   const animations = {

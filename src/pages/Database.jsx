@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { getUserFromToken } from "../utils/auth";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { FaUser, FaEnvelope, FaClock, FaHistory, FaArrowLeft, FaDatabase, FaShieldAlt } from "react-icons/fa";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
+import { FaUser, FaEnvelope, FaHistory, FaArrowLeft, FaDatabase, FaShieldAlt } from "react-icons/fa";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import API_URL from "../utils/api.js";
 import { authenticatedFetch } from "../utils/apiService";
 
@@ -55,10 +55,7 @@ const Database = () => {
     { name: "Crop Advice", count: cropCount, color: "#10b981" }
   ];
 
-  const pieData = [
-    { name: "Weather", value: weatherCount, fill: "#3b82f6" },
-    { name: "Crops", value: cropCount, fill: "#10b981" }
-  ];
+
 
   return (
     <div className="database-page-root">

@@ -9,6 +9,7 @@ export const refreshAccessToken = async () => {
     const response = await fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ refreshToken })
     });
 
@@ -38,6 +39,8 @@ export const authenticatedFetch = async (url, options = {}) => {
   if (!options.headers) {
     options.headers = {};
   }
+  
+  options.credentials = 'include';
   
   if (token) {
     options.headers['Authorization'] = `Bearer ${token}`;
